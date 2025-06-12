@@ -1,6 +1,6 @@
 # 📚 Study Hours Tracker
 
-A clean, GitHub-style study hours tracker with cloud sync. Track your daily study sessions and visualize your progress with a beautiful heatmap.
+A clean, GitHub-style study hours tracker with cloud sync. Track your daily study sessions and visualize your progress.
 
 
 ## Usage
