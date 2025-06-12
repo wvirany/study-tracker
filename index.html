@@ -85,6 +85,15 @@
             background-color: #2c974b;
         }
         
+        .clear-btn {
+            background-color: #cf588a;
+            margin-left: 5px;
+        }
+        
+        .clear-btn:hover {
+            background-color: #b14b76;
+        }
+        
         .stats {
             background: white;
             padding: 15px;
@@ -221,6 +230,7 @@
                 <input type="number" id="afternoon" min="0" max="12" step="any" value="0">
             </div>
             <button type="submit">Add Entry</button>
+            <button type="button" class="clear-btn" onclick="clearDay()">Clear Day</button>
         </form>
     </div>
     
@@ -467,11 +477,18 @@
             const morning = parseFloat(document.getElementById('morning').value) || 0;
             const afternoon = parseFloat(document.getElementById('afternoon').value) || 0;
             
-            // Store the data
+            // Get existing data for this date (if any)
+            const existingData = studyData[date] || { morning: 0, afternoon: 0, total: 0 };
+            
+            // Only update the fields that have values > 0
+            const newMorning = morning > 0 ? morning : existingData.morning;
+            const newAfternoon = afternoon > 0 ? afternoon : existingData.afternoon;
+            
+            // Store the updated data
             studyData[date] = {
-                morning: morning,
-                afternoon: afternoon,
-                total: morning + afternoon
+                morning: newMorning,
+                afternoon: newAfternoon,
+                total: newMorning + newAfternoon
             };
             
             // Save to cloud/local
@@ -490,6 +507,29 @@
             // nextDate.setDate(nextDate.getDate() + 1);
             // document.getElementById('date').valueAsDate = nextDate;
         });
+
+        function clearDay() {
+            const date = document.getElementById('date').value;
+            if (!date) {
+                alert('Please select a date first');
+                return;
+            }
+            
+            // Remove the entry completely or set to zeros
+            delete studyData[date];
+            
+            // Save to cloud/local
+            saveDataToGist();
+            
+            // Update the visualization
+            updateHeatmap();
+            updateStats();
+            
+            // Clear form inputs too
+            document.getElementById('morning').value = '0';
+            document.getElementById('afternoon').value = '0';
+
+        }
         
         function updateStats() {
             const entries = Object.values(studyData);
@@ -578,7 +618,7 @@
                                 day: 'numeric' 
                             });
                             
-                            let tooltipText = `${dateFormatted}: ${hours.toFixed(1)} hours`;
+                            let tooltipText = `${dateFormatted}: ${hours.toFixed(2)} hours`;
                             if (studyEntry) {
                                 tooltipText += ` (${studyEntry.morning}h morning, ${studyEntry.afternoon}h afternoon)`;
                             }
