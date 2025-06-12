@@ -202,10 +202,118 @@
         .settings-link:hover {
             color: #0969da;
         }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: #24292f;
+        }
+        
+        .close {
+            color: #656d76;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover {
+            color: #24292f;
+        }
+        
+        .form-field {
+            margin-bottom: 15px;
+        }
+        
+        .form-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #24292f;
+        }
+        
+        .form-field input[type="text"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5da;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-field input[type="text"]:focus {
+            outline: none;
+            border-color: #0969da;
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .btn-secondary {
+            background-color: #f6f8fa;
+            color: #24292f;
+            border: 1px solid #d1d5da;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .token-info {
+            background-color: #f6f8fa;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: #656d76;
+        }
+        
+        .token-info a {
+            color: #0969da;
+            text-decoration: none;
+        }
+        
+        .token-info a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-    <a href="#" class="settings-link" onclick="showTokenPrompt()">⚙️ Settings</a>
+    <a href="#" class="settings-link" onclick="showSettingsModal()">⚙️ Settings</a>
     
     <div class="header">
         <h1>📚 Study Hours</h1>
@@ -230,15 +338,14 @@
                 <input type="number" id="afternoon" min="0" max="12" step="any" value="0">
             </div>
             <button type="submit">Add Entry</button>
-            <button type="button" class="clear-btn" onclick="clearDay()">Clear Day</button>
+            <button type="button" class="clear-btn" onclick="clearDay()">Clear</button>
         </form>
     </div>
     
     <div class="stats">
         <strong>Total:</strong> 
         <span id="totalHours">0</span> hours | 
-        <span id="totalDays">0</span> days | 
-        <span id="avgHours">0</span> hours/day
+        <span id="totalDays">0</span> days
     </div>
     
     <div class="heatmap-container">
@@ -271,6 +378,33 @@
     
     <div id="tooltip" class="tooltip" style="display: none;"></div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Settings</h3>
+                <span class="close" onclick="closeSettingsModal()">&times;</span>
+            </div>
+            
+            <div class="token-info">
+                <strong>GitHub Token Setup:</strong><br>
+                To sync your data across devices, create a Personal Access Token at 
+                <a href="https://github.com/settings/tokens?scopes=gist" target="_blank">GitHub Settings</a> 
+                with "gist" permissions.
+            </div>
+            
+            <div class="form-field">
+                <label for="tokenInput">GitHub Personal Access Token:</label>
+                <input type="text" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            </div>
+            
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" onclick="clearToken()">Clear Token</button>
+                <button type="button" onclick="saveToken()">Save Token</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Configuration
         const currentYear = new Date().getFullYear();
@@ -289,25 +423,69 @@
         // Load existing data
         loadData();
         
-        function showTokenPrompt() {
-            const newToken = prompt('Enter your GitHub Personal Access Token:\n(Leave blank to clear current token)', githubToken || '');
+        function showSettingsModal() {
+            const modal = document.getElementById('settingsModal');
+            const tokenInput = document.getElementById('tokenInput');
             
-            if (newToken === null) return; // User cancelled
+            // Pre-fill current token (partially hidden for security)
+            if (githubToken) {
+                tokenInput.value = githubToken;
+                tokenInput.setAttribute('data-full-token', githubToken);
+            } else {
+                tokenInput.value = '';
+                tokenInput.removeAttribute('data-full-token');
+            }
             
-            if (newToken.trim() === '') {
-                // Clear token
+            modal.style.display = 'block';
+            
+            // Focus on token input
+            setTimeout(() => tokenInput.focus(), 100);
+        }
+        
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+        
+        function saveToken() {
+            const tokenInput = document.getElementById('tokenInput');
+            const newToken = tokenInput.value.trim();
+            
+            if (!newToken) {
+                alert('Please enter a valid GitHub token');
+                return;
+            }
+            
+            // If it's the masked version, use the full token
+            if (newToken.endsWith('...') && tokenInput.hasAttribute('data-full-token')) {
+                githubToken = tokenInput.getAttribute('data-full-token');
+            } else {
+                githubToken = newToken;
+            }
+            
+            localStorage.setItem(tokenKey, githubToken);
+            localStorage.removeItem(gistIdKey); // Reset gist ID to find/create new one
+            gistId = null;
+            
+            closeSettingsModal();
+            loadDataFromGist(); // Reload with new token
+        }
+        
+        function clearToken() {
+            if (confirm('Clear your GitHub token? You\'ll only have local storage.')) {
                 githubToken = null;
                 localStorage.removeItem(tokenKey);
                 localStorage.removeItem(gistIdKey);
                 gistId = null;
                 updateSyncStatus('🔧 Token cleared - using local storage only');
-            } else {
-                // Save new token
-                githubToken = newToken.trim();
-                localStorage.setItem(tokenKey, githubToken);
-                localStorage.removeItem(gistIdKey); // Reset gist ID to find/create new one
-                gistId = null;
-                loadDataFromGist(); // Reload with new token
+                closeSettingsModal();
+            }
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettingsModal();
             }
         }
         
@@ -535,11 +713,9 @@
             const entries = Object.values(studyData);
             const totalHours = entries.reduce((sum, entry) => sum + entry.total, 0);
             const totalDays = entries.filter(entry => entry.total > 0).length;
-            const avgHours = totalDays > 0 ? (totalHours / totalDays) : 0;
             
-            document.getElementById('totalHours').textContent = totalHours.toFixed(1);
+            document.getElementById('totalHours').textContent = totalHours.toFixed(2);
             document.getElementById('totalDays').textContent = totalDays;
-            document.getElementById('avgHours').textContent = avgHours.toFixed(1);
         }
         
         function getDateString(date) {
