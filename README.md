@@ -14,7 +14,7 @@ A clean, GitHub-style study hours tracker with cloud sync. Track your daily stud
 ### Cloud Sync Setup
 
 1. Create a [GitHub Personal Access Token](https://github.com/settings/tokens?scopes=gist) with `gist` permissions
-2. Save your token in `token.txt` (already in `.gitignore`)
+2. Save your token somewhere safe
 3. Enter token in Settings modal for automatic cloud backup
 
 
