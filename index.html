@@ -196,10 +196,14 @@
     </style>
 </head>
 <body>
-    <a href="#" class="settings-link" onclick="toggleSetup()">⚙️ Settings</a>
+    <a href="#" class="settings-link" onclick="showTokenPrompt()">⚙️ Settings</a>
     
     <div class="header">
         <h1>📚 Study Hours</h1>
+    </div>
+    
+    <div id="syncStatus" class="sync-status">
+        Ready to track your study hours!
     </div>
     
     <div class="input-section">
@@ -272,32 +276,29 @@
         // Set today's date as default
         document.getElementById('date').valueAsDate = new Date();
         
-        // Check if setup is needed
-        if (!githubToken) {
-            document.getElementById('setupSection').classList.remove('hidden');
-        }
-        
         // Load existing data
         loadData();
         
-        function toggleSetup() {
-            const setup = document.getElementById('setupSection');
-            setup.classList.toggle('hidden');
-        }
-        
-        function saveToken() {
-            const token = document.getElementById('githubToken').value.trim();
-            if (!token) {
-                alert('Please enter a valid GitHub token');
-                return;
+        function showTokenPrompt() {
+            const newToken = prompt('Enter your GitHub Personal Access Token:\n(Leave blank to clear current token)', githubToken || '');
+            
+            if (newToken === null) return; // User cancelled
+            
+            if (newToken.trim() === '') {
+                // Clear token
+                githubToken = null;
+                localStorage.removeItem(tokenKey);
+                localStorage.removeItem(gistIdKey);
+                gistId = null;
+                updateSyncStatus('🔧 Token cleared - using local storage only');
+            } else {
+                // Save new token
+                githubToken = newToken.trim();
+                localStorage.setItem(tokenKey, githubToken);
+                localStorage.removeItem(gistIdKey); // Reset gist ID to find/create new one
+                gistId = null;
+                loadDataFromGist(); // Reload with new token
             }
-            
-            githubToken = token;
-            localStorage.setItem(tokenKey, token);
-            document.getElementById('setupSection').classList.add('hidden');
-            
-            // Test the token and load data
-            loadDataFromGist();
         }
         
         function updateSyncStatus(message, type = 'synced') {
@@ -484,10 +485,10 @@
             document.getElementById('morning').value = '0';
             document.getElementById('afternoon').value = '0';
             
-            // Move to next day
-            const nextDate = new Date(date);
-            nextDate.setDate(nextDate.getDate() + 1);
-            document.getElementById('date').valueAsDate = nextDate;
+            // Move to next day (commented out as per your preference)
+            // const nextDate = new Date(date);
+            // nextDate.setDate(nextDate.getDate() + 1);
+            // document.getElementById('date').valueAsDate = nextDate;
         });
         
         function updateStats() {
